@@ -1,0 +1,186 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --font-heading: var(--font-space-grotesk), var(--font-inter), sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-chart-grid: var(--chart-grid);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* ---------------------------------------------------------------------------
+   Paleta da marca Genesis
+     Preto Cósmico       #000107
+     Cinza Grafite Frio  #1B202B
+     Branco Gelo         #F6FDFF
+     Azul Elétrico       #0B71F5  — acento, apenas detalhes
+
+   Contrastes medidos (WCAG):
+     Branco Gelo / Preto Cósmico ............ 20.26:1
+     Azul #0B71F5 sobre Preto Cósmico ........ 4.66:1  (texto OK)
+     Azul #0B71F5 sobre Branco Gelo .......... 4.35:1  (só marca — abaixo de 4.5)
+     Azul #0A5FCC sobre Branco Gelo .......... 5.80:1  (texto OK no tema claro)
+   Por isso o tema claro usa um azul um tom mais escuro para TEXTO/links,
+   mantendo o azul puro da marca em preenchimentos, botões e marcas de gráfico.
+--------------------------------------------------------------------------- */
+
+:root {
+  /* Tema claro — base Branco Gelo */
+  --background: #f6fdff;
+  --foreground: #000107;
+  --card: #ffffff;
+  --card-foreground: #000107;
+  --popover: #ffffff;
+  --popover-foreground: #000107;
+
+  /* Azul de texto/ação: um tom mais escuro para passar 4.5:1 */
+  --primary: #0a5fcc;
+  --primary-foreground: #f6fdff;
+
+  --secondary: #e8eff5;
+  --secondary-foreground: #1b202b;
+  --muted: #eef4f8;
+  --muted-foreground: #4a5468;
+  --accent: #e4edf9;
+  --accent-foreground: #0a5fcc;
+
+  --destructive: #c62828;
+  --border: #d7e2ea;
+  --input: #d7e2ea;
+  --ring: #0b71f5;
+
+  /* Gráficos: série única em azul da marca; o resto é tinta neutra */
+  --chart-1: #0b71f5;
+  --chart-2: #0b71f5;
+  --chart-3: #0b71f5;
+  --chart-4: #0b71f5;
+  --chart-5: #0b71f5;
+  --chart-grid: #d7e2ea;
+
+  --radius: 0.625rem;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #000107;
+  --sidebar-primary: #0b71f5;
+  --sidebar-primary-foreground: #f6fdff;
+  --sidebar-accent: #e4edf9;
+  --sidebar-accent-foreground: #0a5fcc;
+  --sidebar-border: #d7e2ea;
+  --sidebar-ring: #0b71f5;
+}
+
+.dark {
+  /* Tema escuro — base Preto Cósmico, superfícies em Grafite Frio */
+  --background: #000107;
+  --foreground: #f6fdff;
+  --card: #0d1119;
+  --card-foreground: #f6fdff;
+  --popover: #1b202b;
+  --popover-foreground: #f6fdff;
+
+  /* Azul puro da marca: 4.66:1 sobre o preto, passa como texto */
+  --primary: #0b71f5;
+  --primary-foreground: #f6fdff;
+
+  --secondary: #1b202b;
+  --secondary-foreground: #f6fdff;
+  --muted: #141922;
+  --muted-foreground: #8a93a6;
+  --accent: #12243d;
+  --accent-foreground: #4e9bff;
+
+  --destructive: #f05252;
+  --border: #1b202b;
+  --input: #232a38;
+  --ring: #0b71f5;
+
+  --chart-1: #0b71f5;
+  --chart-2: #0b71f5;
+  --chart-3: #0b71f5;
+  --chart-4: #0b71f5;
+  --chart-5: #0b71f5;
+  --chart-grid: #1b202b;
+
+  --sidebar: #000107;
+  --sidebar-foreground: #f6fdff;
+  --sidebar-primary: #0b71f5;
+  --sidebar-primary-foreground: #f6fdff;
+  --sidebar-accent: #12243d;
+  --sidebar-accent-foreground: #4e9bff;
+  --sidebar-border: #1b202b;
+  --sidebar-ring: #0b71f5;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  html {
+    @apply font-sans;
+  }
+
+  /* Space Grotesk is geometric and runs wide; pulling the tracking in keeps
+     headings tight instead of airy. */
+  h1, h2, h3, h4 {
+    @apply font-heading;
+    letter-spacing: -0.02em;
+  }
+
+  /* Currency, counts and axis ticks must line up column to column. */
+  table, .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  /* Small, wide, uppercase label — used for section eyebrows and nav groups. */
+  .eyebrow {
+    @apply text-[0.6875rem] font-medium uppercase text-muted-foreground;
+    letter-spacing: 0.12em;
+  }
+}

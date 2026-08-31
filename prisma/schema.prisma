@@ -1,0 +1,248 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum StageType {
+  OPEN
+  WON
+  LOST
+}
+
+enum ServiceType {
+  SITE
+  SAAS
+  ERP
+  AUTOMACAO
+  IA
+  OUTRO
+}
+
+enum IdeaStatus {
+  BACKLOG
+  RESEARCHING
+  VALIDATING
+  BUILDING
+  LAUNCHED
+  DISCARDED
+}
+
+enum EffortLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum DealStatus {
+  OPEN
+  WON
+  LOST
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  EMAIL
+  MEETING
+  TASK
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  memberships   OrganizationMembership[]
+  pipelineStages PipelineStage[]
+  lossReasons   LossReason[]
+  companies     Company[]
+  contacts      Contact[]
+  deals         Deal[]
+  activities    Activity[]
+  ideas         Idea[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  memberships OrganizationMembership[]
+  activities  Activity[]
+  ideas       Idea[]
+}
+
+model OrganizationMembership {
+  id             String         @id @default(cuid())
+  userId         String
+  organizationId String
+  role           MembershipRole @default(MEMBER)
+  createdAt      DateTime       @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+model PipelineStage {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  order          Int
+  type           StageType @default(OPEN)
+  createdAt      DateTime  @default(now())
+
+  organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deals               Deal[]
+  stageHistoryFrom    StageHistory[] @relation("FromStage")
+  stageHistoryTo      StageHistory[] @relation("ToStage")
+
+  @@unique([organizationId, order])
+}
+
+model LossReason {
+  id             String   @id @default(cuid())
+  organizationId String
+  label          String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deals        Deal[]
+
+  @@unique([organizationId, label])
+}
+
+model Company {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  website        String?
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contacts     Contact[]
+  deals        Deal[]
+}
+
+model Contact {
+  id             String   @id @default(cuid())
+  organizationId String
+  companyId      String?
+  name           String
+  email          String?
+  phone          String?
+  role           String?
+  source         String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  company      Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  deals        Deal[]
+  activities   Activity[]
+}
+
+model Deal {
+  id                String      @id @default(cuid())
+  organizationId    String
+  title             String
+  contactId         String?
+  companyId         String?
+  stageId           String
+  value             Decimal     @default(0) @db.Decimal(12, 2)
+  currency          String      @default("BRL")
+  serviceType       ServiceType @default(OUTRO)
+  status            DealStatus  @default(OPEN)
+  lostReasonId      String?
+  expectedCloseDate DateTime?
+  closedAt          DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact       Contact?       @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  company       Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  stage         PipelineStage  @relation(fields: [stageId], references: [id])
+  lostReason    LossReason?    @relation(fields: [lostReasonId], references: [id], onDelete: SetNull)
+  activities    Activity[]
+  stageHistory  StageHistory[]
+}
+
+model StageHistory {
+  id           String   @id @default(cuid())
+  dealId       String
+  fromStageId  String?
+  toStageId    String
+  changedAt    DateTime @default(now())
+
+  deal      Deal          @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  // A deleted stage takes its history with it — getFunnel only reports on
+  // stages that still exist, so orphaned rows would be dead weight.
+  fromStage PipelineStage? @relation("FromStage", fields: [fromStageId], references: [id], onDelete: SetNull)
+  toStage   PipelineStage  @relation("ToStage", fields: [toStageId], references: [id], onDelete: Cascade)
+}
+
+model Activity {
+  id              String       @id @default(cuid())
+  organizationId  String
+  dealId          String?
+  contactId       String?
+  type            ActivityType
+  body            String
+  dueAt           DateTime?
+  completedAt     DateTime?
+  createdByUserId String
+  createdAt       DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deal         Deal?        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  contact      Contact?     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdByUserId], references: [id])
+}
+
+/// Backlog de produtos que a Genesis considera construir — tipicamente
+/// ferramentas que já existem lá fora e ainda não têm equivalente no Brasil.
+model Idea {
+  id             String      @id @default(cuid())
+  organizationId String
+  title          String
+  description    String?
+  /// Produto de referência lá fora e seu site, quando a ideia parte de um.
+  referenceName  String?
+  referenceUrl   String?
+  category       ServiceType @default(SAAS)
+  status         IdeaStatus  @default(BACKLOG)
+  /// Potencial percebido de 1 a 5; combinado com `effort` ordena o backlog.
+  potential      Int         @default(3)
+  effort         EffortLevel @default(MEDIUM)
+  targetAudience String?
+  notes          String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  /// Opcional e SetNull: remover um membro não pode apagar as ideias dele.
+  createdByUserId String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status])
+}
