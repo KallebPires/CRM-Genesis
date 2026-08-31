@@ -1,9 +1,24 @@
-export function formatCurrency(value: number, currency = "BRL") {
+/**
+ * Formata um valor em CENTAVOS. O nome diz a unidade de propósito: desde a
+ * migração para MongoDB todo dinheiro trafega como Int em centavos, e um
+ * `formatCents(reais)` esquecido daria um erro silencioso de 100×.
+ */
+export function formatCents(cents: number, currency = "BRL") {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(cents / 100);
+}
+
+/** Converte reais digitados num formulário para centavos inteiros. */
+export function toCents(reais: number) {
+  return Math.round(reais * 100);
+}
+
+/** Centavos de volta para reais, para preencher campos de formulário. */
+export function toReais(cents: number) {
+  return cents / 100;
 }
 
 export function formatPercent(value: number) {

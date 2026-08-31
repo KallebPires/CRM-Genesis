@@ -34,7 +34,7 @@ export default async function DealsPage() {
     deals: stage.deals.map((deal) => ({
       id: deal.id,
       title: deal.title,
-      value: Number(deal.value),
+      valueCents: deal.valueCents,
       currency: deal.currency,
       serviceType: deal.serviceType,
       contactName: deal.contact?.name ?? null,

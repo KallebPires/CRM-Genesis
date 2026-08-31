@@ -24,6 +24,14 @@
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
   --color-chart-grid: var(--chart-grid);
+  --color-link: var(--link);
+  --color-inset: var(--inset);
+  --color-success: var(--success);
+  --color-success-tint: var(--success-tint);
+  --color-warning: var(--warning);
+  --color-warning-tint: var(--warning-tint);
+  --color-danger: var(--danger);
+  --color-danger-tint: var(--danger-tint);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -90,6 +98,21 @@
   --input: #d7e2ea;
   --ring: #0b71f5;
 
+  /* Azul para texto pequeno. No claro coincide com --primary; no escuro
+     precisa clarear, porque o azul da marca não alcança 4.5:1 sobre o card. */
+  --link: #0a5fcc;
+
+  /* Superfície levemente recuada dentro de um card (trilhos, células). */
+  --inset: #eef4f8;
+
+  /* Semânticas — medidas sobre a superfície de card de cada tema. */
+  --success: #0a7f4f;          /* 5.05:1 */
+  --success-tint: #e3f5ec;
+  --warning: #9a6300;          /* 5.05:1 */
+  --warning-tint: #fdf1dc;
+  --danger: #c62828;           /* 5.62:1 */
+  --danger-tint: #fdeaea;
+
   /* Gráficos: série única em azul da marca; o resto é tinta neutra */
   --chart-1: #0b71f5;
   --chart-2: #0b71f5;
@@ -134,6 +157,20 @@
   --border: #1b202b;
   --input: #232a38;
   --ring: #0b71f5;
+
+  /* O azul da marca só alcança 4.22:1 sobre o card e 3.64:1 sobre o popover,
+     então texto pequeno em azul usa este tom mais claro (6.71 / 5.79 / 7.40). */
+  --link: #4e9bff;
+
+  --inset: #141821;
+
+  /* Semânticas — medidas sobre #0d1119. */
+  --success: #3fc48d;          /* 8.54:1 */
+  --success-tint: rgb(63 196 141 / 0.16);
+  --warning: #e0a542;          /* 8.67:1 */
+  --warning-tint: rgb(224 165 66 / 0.14);
+  --danger: #f05252;           /* 5.43:1 */
+  --danger-tint: rgb(240 82 82 / 0.14);
 
   --chart-1: #0b71f5;
   --chart-2: #0b71f5;

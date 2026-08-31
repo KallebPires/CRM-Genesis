@@ -72,11 +72,12 @@ export async function moveStageAction(stageId: string, direction: "up" | "down")
   const a = stages[index];
   const b = stages[swapWith];
 
-  await db.$transaction([
-    db.pipelineStage.update({ where: { id: a.id }, data: { order: -1 } }),
-    db.pipelineStage.update({ where: { id: b.id }, data: { order: a.order } }),
-    db.pipelineStage.update({ where: { id: a.id }, data: { order: b.order } }),
-  ]);
+  // Em sequência, não em transação: o MongoDB só suporta transações com
+  // replica set, e um mongod avulso na VPS não tem. O passo pelo -1 evita
+  // colidir com o índice único [organizationId, order] durante a troca.
+  await db.pipelineStage.update({ where: { id: a.id }, data: { order: -1 } });
+  await db.pipelineStage.update({ where: { id: b.id }, data: { order: a.order } });
+  await db.pipelineStage.update({ where: { id: a.id }, data: { order: b.order } });
 
   revalidatePath("/settings");
   revalidatePath("/deals");

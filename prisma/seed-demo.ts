@@ -156,7 +156,7 @@ async function main() {
         contactId: contacts[spec.idx].id,
         companyId: companies[spec.idx].id,
         stageId: target.id,
-        value: spec.value,
+        valueCents: spec.value * 100,
         serviceType: spec.serviceType,
         status: target.type,
         createdAt,

@@ -1,5 +1,16 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Schema do CRM Genesis — MongoDB.
+//
+// Notas da migração vinda do PostgreSQL:
+//  - Todo `id` precisa de @map("_id"), exigência do conector MongoDB.
+//  - `Decimal` não existe neste conector. Dinheiro passou a ser Int em
+//    CENTAVOS (`valueCents`), renomeado de propósito: qualquer ponto do código
+//    que não foi convertido vira erro de compilação em vez de erro por 100×.
+//    Teto do Int: 2.147.483.647 centavos = R$ 21.474.836,47 por registro.
+//  - Não há histórico de migrações no MongoDB; o schema é aplicado com
+//    `prisma db push`. As migrações antigas ficaram em
+//    prisma/migrations.postgres-backup/ caso o Postgres volte um dia.
+//  - As ações referenciais (Cascade/SetNull) são emuladas pelo Prisma no
+//    cliente, não pelo banco.
 
 generator client {
   provider = "prisma-client"
@@ -7,9 +18,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL_UNPOOLED")
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 enum MembershipRole {
@@ -31,6 +41,27 @@ enum ServiceType {
   AUTOMACAO
   IA
   OUTRO
+}
+
+enum ProposalStatus {
+  DRAFT
+  GENERATING
+  AWAITING
+  SENT
+  VIEWED
+  ACCEPTED
+  REJECTED
+}
+
+enum BlockState {
+  EMPTY
+  GENERATING
+  READY
+}
+
+enum MessageAuthor {
+  AGENT
+  USER
 }
 
 enum IdeaStatus {
@@ -63,23 +94,24 @@ enum ActivityType {
 }
 
 model Organization {
-  id        String   @id @default(cuid())
+  id        String   @id @default(cuid()) @map("_id")
   name      String
   slug      String   @unique
   createdAt DateTime @default(now())
 
-  memberships   OrganizationMembership[]
+  memberships    OrganizationMembership[]
   pipelineStages PipelineStage[]
-  lossReasons   LossReason[]
-  companies     Company[]
-  contacts      Contact[]
-  deals         Deal[]
-  activities    Activity[]
-  ideas         Idea[]
+  lossReasons    LossReason[]
+  companies      Company[]
+  contacts       Contact[]
+  deals          Deal[]
+  activities     Activity[]
+  ideas          Idea[]
+  proposals      Proposal[]
 }
 
 model User {
-  id           String   @id @default(cuid())
+  id           String   @id @default(cuid()) @map("_id")
   name         String
   email        String   @unique
   passwordHash String
@@ -91,7 +123,7 @@ model User {
 }
 
 model OrganizationMembership {
-  id             String         @id @default(cuid())
+  id             String         @id @default(cuid()) @map("_id")
   userId         String
   organizationId String
   role           MembershipRole @default(MEMBER)
@@ -104,23 +136,23 @@ model OrganizationMembership {
 }
 
 model PipelineStage {
-  id             String    @id @default(cuid())
+  id             String    @id @default(cuid()) @map("_id")
   organizationId String
   name           String
   order          Int
   type           StageType @default(OPEN)
   createdAt      DateTime  @default(now())
 
-  organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  deals               Deal[]
-  stageHistoryFrom    StageHistory[] @relation("FromStage")
-  stageHistoryTo      StageHistory[] @relation("ToStage")
+  organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deals            Deal[]
+  stageHistoryFrom StageHistory[] @relation("FromStage")
+  stageHistoryTo   StageHistory[] @relation("ToStage")
 
   @@unique([organizationId, order])
 }
 
 model LossReason {
-  id             String   @id @default(cuid())
+  id             String   @id @default(cuid()) @map("_id")
   organizationId String
   label          String
   createdAt      DateTime @default(now())
@@ -132,7 +164,7 @@ model LossReason {
 }
 
 model Company {
-  id             String   @id @default(cuid())
+  id             String   @id @default(cuid()) @map("_id")
   organizationId String
   name           String
   website        String?
@@ -142,10 +174,11 @@ model Company {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   contacts     Contact[]
   deals        Deal[]
+  proposals    Proposal[]
 }
 
 model Contact {
-  id             String   @id @default(cuid())
+  id             String   @id @default(cuid()) @map("_id")
   organizationId String
   companyId      String?
   name           String
@@ -162,13 +195,14 @@ model Contact {
 }
 
 model Deal {
-  id                String      @id @default(cuid())
+  id                String      @id @default(cuid()) @map("_id")
   organizationId    String
   title             String
   contactId         String?
   companyId         String?
   stageId           String
-  value             Decimal     @default(0) @db.Decimal(12, 2)
+  /// Valor em centavos. Ver nota de dinheiro no topo do arquivo.
+  valueCents        Int         @default(0)
   currency          String      @default("BRL")
   serviceType       ServiceType @default(OUTRO)
   status            DealStatus  @default(OPEN)
@@ -178,31 +212,36 @@ model Deal {
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
-  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  contact       Contact?       @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  company       Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  stage         PipelineStage  @relation(fields: [stageId], references: [id])
-  lostReason    LossReason?    @relation(fields: [lostReasonId], references: [id], onDelete: SetNull)
-  activities    Activity[]
-  stageHistory  StageHistory[]
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact      Contact?       @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  company      Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  stage        PipelineStage  @relation(fields: [stageId], references: [id])
+  lostReason   LossReason?    @relation(fields: [lostReasonId], references: [id], onDelete: SetNull)
+  activities   Activity[]
+  stageHistory StageHistory[]
+  proposals    Proposal[]
+
+  @@index([organizationId, status])
 }
 
 model StageHistory {
-  id           String   @id @default(cuid())
-  dealId       String
-  fromStageId  String?
-  toStageId    String
-  changedAt    DateTime @default(now())
+  id          String   @id @default(cuid()) @map("_id")
+  dealId      String
+  fromStageId String?
+  toStageId   String
+  changedAt   DateTime @default(now())
 
-  deal      Deal          @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  // A deleted stage takes its history with it — getFunnel only reports on
-  // stages that still exist, so orphaned rows would be dead weight.
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  // Uma etapa excluída leva o histórico junto — getFunnel só reporta etapas
+  // que ainda existem, então registros órfãos seriam peso morto.
   fromStage PipelineStage? @relation("FromStage", fields: [fromStageId], references: [id], onDelete: SetNull)
   toStage   PipelineStage  @relation("ToStage", fields: [toStageId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
 }
 
 model Activity {
-  id              String       @id @default(cuid())
+  id              String       @id @default(cuid()) @map("_id")
   organizationId  String
   dealId          String?
   contactId       String?
@@ -217,12 +256,72 @@ model Activity {
   deal         Deal?        @relation(fields: [dealId], references: [id], onDelete: Cascade)
   contact      Contact?     @relation(fields: [contactId], references: [id], onDelete: Cascade)
   createdBy    User         @relation(fields: [createdByUserId], references: [id])
+
+  @@index([dealId])
+}
+
+/// Proposta comercial gerada a partir de um negócio. O documento é uma lista
+/// ordenada de blocos, cada um preenchível pelo agente de IA separadamente.
+model Proposal {
+  id             String         @id @default(cuid()) @map("_id")
+  organizationId String
+  dealId         String?
+  companyId      String?
+  /// Identificador da URL, único dentro da organização.
+  slug           String
+  title          String
+  status         ProposalStatus @default(DRAFT)
+  /// Valor em centavos. Ver nota de dinheiro no topo do arquivo.
+  valueCents     Int            @default(0)
+  currency       String         @default("BRL")
+  /// Quantas vezes o cliente abriu o link; 0 enquanto não enviada.
+  views          Int            @default(0)
+  lastViewedAt   DateTime?
+  sentAt         DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deal         Deal?             @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  company      Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  blocks       ProposalBlock[]
+  messages     ProposalMessage[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, status])
+}
+
+model ProposalBlock {
+  id         String     @id @default(cuid()) @map("_id")
+  proposalId String
+  order      Int
+  label      String
+  content    String?
+  state      BlockState @default(EMPTY)
+  updatedAt  DateTime   @updatedAt
+
+  proposal Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@unique([proposalId, order])
+}
+
+/// Conversa com o agente sobre esta proposta.
+model ProposalMessage {
+  id         String        @id @default(cuid()) @map("_id")
+  proposalId String
+  author     MessageAuthor
+  text       String
+  createdAt  DateTime      @default(now())
+
+  proposal Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@index([proposalId, createdAt])
 }
 
 /// Backlog de produtos que a Genesis considera construir — tipicamente
 /// ferramentas que já existem lá fora e ainda não têm equivalente no Brasil.
 model Idea {
-  id             String      @id @default(cuid())
+  id             String      @id @default(cuid()) @map("_id")
   organizationId String
   title          String
   description    String?

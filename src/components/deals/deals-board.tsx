@@ -32,12 +32,12 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { moveDealStageAction } from "@/server/deals";
-import { formatCurrency, SERVICE_TYPE_LABELS } from "@/lib/format";
+import { formatCents, SERVICE_TYPE_LABELS } from "@/lib/format";
 
 export type BoardDeal = {
   id: string;
   title: string;
-  value: number;
+  valueCents: number;
   currency: string;
   serviceType: string;
   contactName: string | null;
@@ -183,7 +183,7 @@ export function DealsBoard({
 
 function StageColumn({ stage }: { stage: BoardStage }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
-  const total = stage.deals.reduce((sum, deal) => sum + deal.value, 0);
+  const total = stage.deals.reduce((sum, deal) => sum + deal.valueCents, 0);
 
   return (
     <Card
@@ -200,7 +200,7 @@ function StageColumn({ stage }: { stage: BoardStage }) {
           </span>
         </CardTitle>
         <p className="font-heading text-sm font-medium tracking-tight tabular">
-          {formatCurrency(total)}
+          {formatCents(total)}
         </p>
       </CardHeader>
       <CardContent className="flex min-h-24 flex-col gap-2 px-4">
@@ -245,7 +245,7 @@ function DealCard({ deal, dragging }: { deal: BoardDeal; dragging?: boolean }) {
             {SERVICE_TYPE_LABELS[deal.serviceType] ?? deal.serviceType}
           </Badge>
           <span className="font-heading text-xs font-semibold tracking-tight tabular">
-            {formatCurrency(deal.value, deal.currency)}
+            {formatCents(deal.valueCents, deal.currency)}
           </span>
         </div>
       </div>

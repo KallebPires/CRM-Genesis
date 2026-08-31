@@ -11,7 +11,7 @@ import { DeleteButton } from "@/components/delete-button";
 import { ActivityForm } from "@/components/deals/activity-form";
 import { ActivityTimeline } from "@/components/deals/activity-timeline";
 import { deleteDealAction } from "@/server/deals";
-import { formatCurrency, SERVICE_TYPE_LABELS } from "@/lib/format";
+import { formatCents, toReais, SERVICE_TYPE_LABELS } from "@/lib/format";
 
 export default async function DealDetailPage({
   params,
@@ -70,7 +70,7 @@ export default async function DealDetailPage({
                 title: deal.title,
                 contactId: deal.contactId,
                 companyId: deal.companyId,
-                value: Number(deal.value),
+                value: toReais(deal.valueCents),
                 serviceType: deal.serviceType,
                 expectedCloseDate: deal.expectedCloseDate
                   ? deal.expectedCloseDate.toISOString().slice(0, 10)
@@ -87,7 +87,7 @@ export default async function DealDetailPage({
         <CardContent className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-muted-foreground">Valor</p>
-            <p className="font-medium">{formatCurrency(Number(deal.value), deal.currency)}</p>
+            <p className="font-medium">{formatCents(deal.valueCents, deal.currency)}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Empresa</p>

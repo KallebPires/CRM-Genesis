@@ -1,7 +1,7 @@
 "use client";
 
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { formatCurrency } from "@/lib/format";
+import { formatCents } from "@/lib/format";
 
 export function RevenueChart({ data }: { data: { label: string; value: number }[] }) {
   return (
@@ -31,7 +31,7 @@ export function RevenueChart({ data }: { data: { label: string; value: number }[
             fontVariantNumeric: "tabular-nums",
             boxShadow: "0 4px 16px rgb(0 0 0 / 0.18)",
           }}
-          formatter={(value) => formatCurrency(Number(value))}
+          formatter={(value) => formatCents(Number(value))}
         />
         <Area
           type="monotone"

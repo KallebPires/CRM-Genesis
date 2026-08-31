@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/session";
+import { toCents } from "@/lib/format";
 
 const dealSchema = z.object({
   title: z.string().min(1, "Informe o título do negócio"),
@@ -57,7 +58,7 @@ export async function createDealAction(
       title: parsed.data.title,
       contactId: parsed.data.contactId || null,
       companyId: parsed.data.companyId || null,
-      value: parsed.data.value,
+      valueCents: toCents(parsed.data.value),
       serviceType: parsed.data.serviceType,
       expectedCloseDate: parsed.data.expectedCloseDate
         ? new Date(parsed.data.expectedCloseDate)
@@ -90,7 +91,7 @@ export async function updateDealAction(
       title: parsed.data.title,
       contactId: parsed.data.contactId || null,
       companyId: parsed.data.companyId || null,
-      value: parsed.data.value,
+      valueCents: toCents(parsed.data.value),
       serviceType: parsed.data.serviceType,
       expectedCloseDate: parsed.data.expectedCloseDate
         ? new Date(parsed.data.expectedCloseDate)
@@ -128,20 +129,24 @@ export async function moveDealStageAction(
     return { error: "Selecione um motivo de perda" };
   }
 
-  await db.$transaction([
-    db.deal.update({
-      where: { id: dealId },
-      data: {
-        stageId: toStageId,
-        status: toStage.type,
-        closedAt: toStage.type === "OPEN" ? null : new Date(),
-        lostReasonId: toStage.type === "LOST" ? lostReasonId : null,
-      },
-    }),
-    db.stageHistory.create({
-      data: { dealId, fromStageId: deal.stageId, toStageId },
-    }),
-  ]);
+  // Em sequência, não em transação: o MongoDB só suporta transações com
+  // replica set. O histórico vem primeiro de propósito — se a segunda escrita
+  // falhar, sobra um registro de histórico a mais, que só infla a contagem do
+  // funil. Na ordem inversa, o negócio mudaria de etapa sem deixar rastro, e o
+  // funil passaria a mentir de forma silenciosa.
+  await db.stageHistory.create({
+    data: { dealId, fromStageId: deal.stageId, toStageId },
+  });
+
+  await db.deal.update({
+    where: { id: dealId },
+    data: {
+      stageId: toStageId,
+      status: toStage.type,
+      closedAt: toStage.type === "OPEN" ? null : new Date(),
+      lostReasonId: toStage.type === "LOST" ? lostReasonId : null,
+    },
+  });
 
   revalidatePath("/deals");
   revalidatePath("/dashboard");
